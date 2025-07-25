@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tabla de Registros Avanzada con Bootstrap 5</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        /* Estilos generales para una mejor apariencia */
+        body {
+            background-color: #f8f9fa;
+            padding-top: 20px;
+            font-family: 'Inter', sans-serif;
+        }
+        .container {
+            max-width: 1200px;
+        }
+        .table {
+            border-radius: .75rem;
+            overflow: hidden;
+        }
+        /* Estilos para el encabezado de la tabla */
+        .table thead th {
+            user-select: none;
+            position: relative;
+            background-color: #e9ecef;
+            vertical-align: middle;
+        }
+        .table thead th .sort-icon {
+            margin-left: 8px;
+            color: #6c757d;
+        }
+        .header-content {
+            cursor: pointer;
+        }
+        .filter-btn {
+            padding: 0.1rem 0.4rem !important;
+            font-size: 0.8rem;
+        }
+        .filter-btn.active {
+            color: var(--bs-primary);
+        }
+        /* Estilos para las filas y celdas */
+        .table-hover tbody tr:hover {
+            background-color: #dee2e6;
+        }
+        .table tbody td, .table tbody th {
+            vertical-align: middle;
+        }
+        /* Clase para resaltar filas seleccionadas */
+        .selected-row {
+            background-color: #cfe2ff !important;
+            font-weight: 500;
+        }
+        /* Estilos para el modal de columnas */
+        #columnSelectorList {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .modal-body .form-check:hover {
+            background-color: #f1f3f5;
+        }
+        .pagination .page-link {
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">Lista de Registros</h2>
+    </div>
+
+    <!-- Tabla de Registros -->
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered" id="recordsTable">
+            <thead class="table-light">
+                <!-- El encabezado se generará dinámicamente -->
+            </thead>
+            <tbody>
+                <!-- Las filas se insertarán aquí dinámicamente -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Paginación y contador de registros -->
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <span id="pagination-info" class="text-muted"></span>
+        <nav id="pagination-nav"></nav>
+    </div>
+</div>
+
+<!-- Modal para seleccionar columnas -->
+<div class="modal fade" id="columnsModal" tabindex="-1" aria-labelledby="columnsModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="columnsModalLabel">Columnas Visibles</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex align-items-center mb-3">
+            <input type="text" class="form-control" id="columnSearchInput" placeholder="Buscar columnas...">
+            <div class="ms-2 d-flex">
+                <button type="button" class="btn btn-secondary btn-sm" id="selectAllColsBtn" title="Seleccionar Todas"><i class="bi bi-check-square-fill"></i></button>
+                <button type="button" class="btn btn-outline-secondary btn-sm ms-1" id="deselectAllColsBtn" title="Deseleccionar Todas"><i class="bi bi-square"></i></button>
+            </div>
+        </div>
+        <div id="columnSelectorList"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-success" id="saveColumnChanges">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para filtrar por columna -->
+<div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="filterModalLabel">Filtrar</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" class="form-control" id="filterModalInput" placeholder="Valor a buscar...">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="clearFilterBtn">Limpiar</button>
+        <button type="button" class="btn btn-primary" id="applyFilterBtn">Aplicar Filtro</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Bootstrap 5 JS Bundle (incluye Popper) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Lógica de la Tabla -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // --- CONFIGURACIÓN INICIAL ---
+    const initialData = [
+        { id: 1, nombre: 'Ana García', email: 'ana.garcia@example.com', fecha: '2024-03-15', pais: 'España', status: 'Activo' },
+        { id: 2, nombre: 'Carlos Rodríguez', email: 'carlos.r@example.com', fecha: '2023-11-20', pais: 'México', status: 'Inactivo' },
+        { id: 3, nombre: 'Sofía Martínez', email: 'sofia.m@example.com', fecha: '2024-01-05', pais: 'Argentina', status: 'Activo' },
+        { id: 4, nombre: 'Luis Hernández', email: 'luis.h@example.com', fecha: '2023-09-30', pais: 'Colombia', status: 'Pendiente' },
+        { id: 5, nombre: 'Laura Pérez', email: 'laura.p@example.com', fecha: '2024-05-22', pais: 'Chile', status: 'Activo' },
+        { id: 6, nombre: 'Javier Gómez', email: 'javier.g@example.com', fecha: '2023-08-10', pais: 'Perú', status: 'Activo' },
+        { id: 7, nombre: 'Isabel Díaz', email: 'isabel.d@example.com', fecha: '2024-06-01', pais: 'España', status: 'Inactivo' },
+        { id: 8, nombre: 'Miguel Torres', email: 'miguel.t@example.com', fecha: '2023-12-25', pais: 'México', status: 'Activo' },
+        { id: 9, nombre: 'Elena Ruiz', email: 'elena.r@example.com', fecha: '2024-02-18', pais: 'Argentina', status: 'Pendiente' },
+        { id: 10, nombre: 'David Moreno', email: 'david.m@example.com', fecha: '2023-07-14', pais: 'Colombia', status: 'Activo' }
+    ];
+
+    const allColumns = [
+        { key: 'id', label: 'ID', type: 'number' },
+        { key: 'nombre', label: 'Nombre', type: 'string' },
+        { key: 'email', label: 'Email', type: 'string' },
+        { key: 'fecha', label: 'Fecha de Registro', type: 'date' },
+        { key: 'pais', label: 'País', type: 'string' },
+        { key: 'status', label: 'Estado', type: 'string' }
+    ];
+
+    let visibleColumns = ['id', 'nombre', 'email', 'fecha', 'status'];
+    
+    const tableHead = document.querySelector('#recordsTable thead');
+    const tableBody = document.querySelector('#recordsTable tbody');
+    const columnsModal = new bootstrap.Modal(document.getElementById('columnsModal'));
+    const filterModal = new bootstrap.Modal(document.getElementById('filterModal'));
+    
+    let tableData = JSON.parse(JSON.stringify(initialData));
+    let sortState = [];
+    let activeFilters = {};
+    let currentFilteringColumn = null;
+    
+    // --- ESTADO DE PAGINACIÓN ---
+    let currentPage = 1;
+    const rowsPerPage = 5;
+
+    // --- RENDERIZADO ---
+    function renderHeader() {
+        tableHead.innerHTML = '';
+        const tr = document.createElement('tr');
+
+        tr.innerHTML = `<th style="width: 5%; text-align: center;"><input class="form-check-input" type="checkbox" id="selectAllCheckbox" title="Seleccionar todo"></th>`;
+
+        visibleColumns.forEach(columnKey => {
+            const columnDef = allColumns.find(c => c.key === columnKey);
+            if (columnDef) {
+                const th = document.createElement('th');
+                th.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="header-content" data-column="${columnDef.key}" data-type="${columnDef.type}">
+                            ${columnDef.label} 
+                            <span class="sort-icon ms-1">
+                                <i class="bi bi-arrow-down-up text-muted"></i>
+                            </span>
+                        </span>
+                        <button class="btn btn-light btn-sm filter-btn" data-column="${columnDef.key}" data-label="${columnDef.label}" title="Filtrar por ${columnDef.label}">
+                            <i class="bi bi-filter"></i>
+                        </button>
+                    </div>
+                `;
+                tr.appendChild(th);
+            }
+        });
+
+        tr.innerHTML += `<th style="width: 15%; text-align: center;">Acciones</th>`;
+        tr.innerHTML += `<th class="text-center"><button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#columnsModal" title="Configurar columnas"><i class="bi bi-gear"></i></button></th>`;
+        
+        tableHead.appendChild(tr);
+        addHeaderEventListeners();
+        updateSortIcons();
+        updateFilterIcons();
+    }
+
+    function renderBodyAndPagination() {
+        tableBody.innerHTML = '';
+        const filteredData = getFilteredData();
+        
+        // Lógica de paginación
+        const startIndex = (currentPage - 1) * rowsPerPage;
+        const endIndex = startIndex + rowsPerPage;
+        const pageData = filteredData.slice(startIndex, endIndex);
+
+        pageData.forEach(item => {
+            const row = document.createElement('tr');
+            row.dataset.rowId = item.id;
+
+            row.innerHTML = `<td style="text-align: center;"><input class="form-check-input row-checkbox" type="checkbox"></td>`;
+
+            visibleColumns.forEach(key => {
+                const cell = document.createElement('td');
+                cell.textContent = item[key] || '';
+                row.appendChild(cell);
+            });
+
+            const actionsCell = document.createElement('td');
+            actionsCell.classList.add('text-center');
+            actionsCell.innerHTML = `
+                <button class="btn btn-sm btn-success" title="Editar fila"><i class="bi bi-pencil-square"></i></button>
+                <button class="btn btn-sm btn-danger" title="Eliminar fila"><i class="bi bi-trash3"></i></button>
+            `;
+            row.appendChild(actionsCell);
+
+            row.innerHTML += `<td></td>`;
+            tableBody.appendChild(row);
+        });
+        
+        renderPagination(filteredData.length);
+    }
+
+    function renderPagination(totalRows) {
+        const paginationNav = document.getElementById('pagination-nav');
+        const paginationInfo = document.getElementById('pagination-info');
+        paginationNav.innerHTML = '';
+        
+        const totalPages = Math.ceil(totalRows / rowsPerPage);
+
+        if (totalRows === 0) {
+            paginationInfo.textContent = 'No hay registros para mostrar.';
+            return;
+        }
+
+        const startRecord = (currentPage - 1) * rowsPerPage + 1;
+        const endRecord = Math.min(startRecord + rowsPerPage - 1, totalRows);
+        paginationInfo.textContent = `Mostrando ${startRecord} a ${endRecord} de ${totalRows} registros.`;
+
+        if (totalPages <= 1) return;
+
+        const ul = document.createElement('ul');
+        ul.className = 'pagination pagination-sm';
+
+        // Botón "Anterior"
+        const prevLi = document.createElement('li');
+        prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+        prevLi.innerHTML = `<a class="page-link" data-page="${currentPage - 1}">Anterior</a>`;
+        ul.appendChild(prevLi);
+
+        // Números de página
+        for (let i = 1; i <= totalPages; i++) {
+            const pageLi = document.createElement('li');
+            pageLi.className = `page-item ${i === currentPage ? 'active' : ''}`;
+            pageLi.innerHTML = `<a class="page-link" data-page="${i}">${i}</a>`;
+            ul.appendChild(pageLi);
+        }
+
+        // Botón "Siguiente"
+        const nextLi = document.createElement('li');
+        nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+        nextLi.innerHTML = `<a class="page-link" data-page="${currentPage + 1}">Siguiente</a>`;
+        ul.appendChild(nextLi);
+
+        paginationNav.appendChild(ul);
+
+        paginationNav.querySelectorAll('.page-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                const page = parseInt(e.target.dataset.page);
+                if (page) {
+                    currentPage = page;
+                    renderBodyAndPagination();
+                }
+            });
+        });
+    }
+
+    // --- MANEJADORES DE EVENTOS ---
+    function addHeaderEventListeners() {
+        tableHead.querySelectorAll('.header-content').forEach(th => th.addEventListener('click', handleSortClick));
+        tableHead.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', openFilterModal));
+        document.getElementById('selectAllCheckbox').addEventListener('change', handleSelectAll);
+    }
+    
+    // --- LÓGICA DE FUNCIONALIDADES ---
+    function getFilteredData() {
+        return tableData.filter(row => {
+            for (const column in activeFilters) {
+                const filterValue = activeFilters[column];
+                const rowValue = String(row[column] || '').toLowerCase();
+                if (!rowValue.includes(filterValue)) {
+                    return false;
+                }
+            }
+            return true;
+        });
+    }
+
+    function handleSortClick(e) {
+        const column = e.currentTarget.dataset.column;
+        if (!e.shiftKey) {
+            const currentSort = sortState.find(s => s.column === column);
+            sortState = (currentSort && currentSort.direction === 'asc') ? [{ column, direction: 'desc' }] : [{ column, direction: 'asc' }];
+        } else {
+            const existingSortIndex = sortState.findIndex(s => s.column === column);
+            if (existingSortIndex > -1) {
+                sortState[existingSortIndex].direction = sortState[existingSortIndex].direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortState.push({ column, direction: 'asc' });
+            }
+        }
+        sortTable();
+    }
+
+    function sortTable() {
+        // La ordenación ahora se aplica a la fuente de datos original, no a la filtrada
+        tableData.sort((a, b) => {
+            for (const sort of sortState) {
+                const { column, direction } = sort;
+                const type = allColumns.find(c => c.key === column).type;
+                const valA = a[column], valB = b[column];
+                let comparison = 0;
+                if (type === 'number') comparison = valA - valB;
+                else if (type === 'date') comparison = new Date(valA) - new Date(valB);
+                else comparison = String(valA).localeCompare(String(valB), 'es', { sensitivity: 'base' });
+                if (comparison !== 0) return direction === 'asc' ? comparison : -comparison;
+            }
+            return 0;
+        });
+        currentPage = 1;
+        renderBodyAndPagination();
+        updateSortIcons();
+    }
+
+    function updateSortIcons() {
+        tableHead.querySelectorAll('.sort-icon').forEach(icon => {
+            const badge = icon.parentElement.querySelector('.badge');
+            if (badge) badge.remove();
+            icon.className = 'sort-icon';
+        });
+        sortState.forEach((sort, index) => {
+            const th = tableHead.querySelector(`.header-content[data-column="${sort.column}"]`);
+            if (th) {
+                const icon = th.querySelector('.sort-icon');
+                icon.className = `sort-icon bi ${sort.direction === 'asc' ? 'bi-sort-up-alt' : 'bi-sort-down-alt'}`;
+                if (sortState.length > 1) {
+                    const numberBadge = document.createElement('span');
+                    numberBadge.className = 'badge bg-secondary ms-1 rounded-pill';
+                    numberBadge.textContent = index + 1;
+                    th.append(numberBadge);
+                }
+            }
+        });
+    }
+    
+    function updateFilterIcons() {
+        tableHead.querySelectorAll('.filter-btn').forEach(btn => {
+            const column = btn.dataset.column;
+            const icon = btn.querySelector('i');
+            if (activeFilters[column]) {
+                icon.className = 'bi bi-filter-square-fill';
+                btn.classList.add('active');
+            } else {
+                icon.className = 'bi bi-filter';
+                btn.classList.remove('active');
+            }
+        });
+    }
+
+    function handleSelectAll(e) {
+        tableBody.querySelectorAll('tr').forEach(row => {
+            const checkbox = row.querySelector('.row-checkbox');
+            checkbox.checked = e.target.checked;
+            row.classList.toggle('selected-row', e.target.checked);
+        });
+    }
+
+    // --- LÓGICA DEL MODAL DE FILTRO ---
+    function openFilterModal(e) {
+        e.stopPropagation();
+        currentFilteringColumn = e.currentTarget.dataset.column;
+        const columnLabel = e.currentTarget.dataset.label;
+        
+        document.getElementById('filterModalLabel').textContent = `Filtrar por ${columnLabel}`;
+        const filterInput = document.getElementById('filterModalInput');
+        filterInput.value = activeFilters[currentFilteringColumn] || '';
+        
+        filterModal.show();
+        filterInput.focus();
+    }
+    
+    document.getElementById('applyFilterBtn').addEventListener('click', () => {
+        const filterValue = document.getElementById('filterModalInput').value.toLowerCase().trim();
+        if (filterValue) {
+            activeFilters[currentFilteringColumn] = filterValue;
+        } else {
+            delete activeFilters[currentFilteringColumn];
+        }
+        currentPage = 1;
+        renderBodyAndPagination();
+        updateFilterIcons();
+        filterModal.hide();
+    });
+
+    document.getElementById('clearFilterBtn').addEventListener('click', () => {
+        delete activeFilters[currentFilteringColumn];
+        currentPage = 1;
+        renderBodyAndPagination();
+        updateFilterIcons();
+        filterModal.hide();
+    });
+
+    // --- LÓGICA DEL MODAL DE COLUMNAS ---
+    const columnSelectorList = document.getElementById('columnSelectorList');
+    const columnSearchInput = document.getElementById('columnSearchInput');
+
+    function populateColumnSelector() {
+        columnSelectorList.innerHTML = '';
+        allColumns.forEach(col => {
+            const isChecked = visibleColumns.includes(col.key);
+            columnSelectorList.innerHTML += `
+                <div class="form-check p-2 d-flex align-items-center" ${isChecked ? 'class="bg-light"' : ''}>
+                    <input class="form-check-input me-2" type="checkbox" value="${col.key}" id="col-check-${col.key}" ${isChecked ? 'checked' : ''}>
+                    <label class="form-check-label w-100" for="col-check-${col.key}">${col.label}</label>
+                </div>
+            `;
+        });
+    }
+
+    document.getElementById('saveColumnChanges').addEventListener('click', () => {
+        const selectedColumns = [];
+        columnSelectorList.querySelectorAll('input[type="checkbox"]:checked').forEach(input => {
+            selectedColumns.push(input.value);
+        });
+        visibleColumns = selectedColumns;
+        currentPage = 1;
+        renderHeader();
+        renderBodyAndPagination();
+        columnsModal.hide();
+    });
+    
+    document.getElementById('selectAllColsBtn').addEventListener('click', () => {
+        columnSelectorList.querySelectorAll('input[type=checkbox]').forEach(el => el.checked = true);
+    });
+
+    document.getElementById('deselectAllColsBtn').addEventListener('click', () => {
+        columnSelectorList.querySelectorAll('input[type=checkbox]').forEach(el => el.checked = false);
+    });
+
+    columnSearchInput.addEventListener('keyup', () => {
+        const filterValue = columnSearchInput.value.toLowerCase().trim();
+        columnSelectorList.querySelectorAll('.form-check').forEach(item => {
+            const label = item.querySelector('label').textContent.toLowerCase();
+            item.style.display = label.includes(filterValue) ? '' : 'none';
+        });
+    });
+
+    // --- INICIALIZACIÓN ---
+    function init() {
+        populateColumnSelector();
+        renderHeader();
+        renderBodyAndPagination();
+    }
+
+    init();
+});
+</script>
+
+</body>
+</html>
