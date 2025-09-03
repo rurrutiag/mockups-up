@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>One uPlanner</title>
+        <!-- Bootstrap-->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- Google Fonts-->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">  
+        <!-- Styles -->
+        <link rel="stylesheet" href="../styles/suite.css" />
+        <!-- Data -->
+        <script src="../js/ui-constants.js"></script>
+        <script src="../js/data/apps.js"></script>
+        <script src="../js/data/notifications-student.js"></script>
+        <script src="../js/data/objects-sx-care-student.js"></script>
+        <script src="../js/data/user-profile-headernav-options.js"></script>
+        <script src="../js/data/support-services.js"></script>
+        <!-- Scripts -->
+        <script src="../js/renders/suite.js"></script>
+        <script src="../js/renders/support-services-list.js"></script>
+        <script src="../js/renders/filters.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                // DOM Elements
+                // SuiteRender
+                const appActive = 'student-care';
+                const appSidebar = document.getElementById('app-sidebar');
+                const appSidebarBody = document.getElementById('app-list');
+                const appSidebarToggleBtn = document.getElementById('app-sidebar-toggle-btn');
+                const mobileAppHubBtn = document.getElementById('mobile-apphub-btn');
+                const appHubModal = document.getElementById('appHubModal');
+                const closeAppHubModalBtn = document.getElementById('closeAppHubModalBtn');
+                const appHubGrid = document.getElementById('app-hub-grid');
+                const objectNavContainer = document.getElementById('secondary-nav');
+                const userProfileBtn = document.getElementById('user-button-container');
+                const notificationsContainer = document.getElementById('notifications-list');
+                const notificationsBadge = document.getElementById('notification-badge');
+                const notificationsSwitch = document.getElementById('flexSwitchCheckDefault');
+                const notificationsUnread = document.querySelectorAll('.notification-unread');
+
+                // ServicesRender
+                const servicesGrid = document.getElementById('services-grid');
+                const noResultsMessage = document.getElementById('no-services-message');
+
+                // Inicializar renderizado de la suite
+                const suiteRender = new SuiteRender({
+                    appActive,
+                    appSidebar,
+                    appSidebarBody,
+                    appSidebarToggleBtn,
+                    mobileAppHubBtn,
+                    appHubModal,
+                    closeAppHubModalBtn,
+                    appHubGrid,
+                    objectNavContainer,
+                    userProfileBtn,
+                    notificationsContainer,
+                    notificationsBadge,
+                    notificationsSwitch,
+                    notificationsUnread,
+                    appsData: window.studentAppsData,
+                    objectNavigationData: window.objectNavigationData,
+                    userButtonOptions: window.userButtonStudentOptions,
+                    notificationsData: window.notificationsData
+                });
+                suiteRender.initEvents();
+                const servicesListRender = new ServicesListRender({
+                    servicesData: window.servicesStudentData,
+                    servicesGrid,
+                    noResultsMessage,
+                    bootstrapColors: window.bootstrapColors
+                });
+                servicesListRender.initEvents();
+
+                const filterSystemConfig = {
+                    // Referencias a elementos del DOM
+                    filterBar: document.getElementById('filter-bar'),
+                    filterSidebar: document.getElementById('filterSidebar'),
+                    filterSidebarBody: document.getElementById('filter-sidebar-body'),
+                    searchInput: document.getElementById('search-input'),
+                    searchBtn: document.getElementById('search-button'),
+                    filterModalElement: document.getElementById('filterModal'),
+                    filterModalTitle: document.getElementById('filterModalLabel'),
+                    filterModalBody: document.getElementById('filterModalBody'),
+                    applyFiltersBtn: document.getElementById('applyFilterModalBtn'),
+                    filterSidebarToggleBtn: document.getElementById('filter-sidebar-toggle'),
+                    closeFilterSidebarBtn: document.getElementById('close-filter-sidebar'),
+                    applyFiltersSidebarBtn: document.getElementById('apply-sidebar-filters'),
+                    clearFiltersSidebarBtn: document.getElementById('clear-sidebar-filters'),
+
+                    // Datos y mapeo de filtros
+                    servicesData: window.servicesStudentData,
+                    filterSettings: {
+                        'modality': {
+                            field: 'modality',
+                            name: 'Modalidad'
+                        },
+                        'category': {
+                            field: 'category_1',
+                            name: 'Categoría'
+                        },
+                        'campus': {
+                            field: 'campus',
+                            name: 'Campus'
+                        },
+                        'location': {
+                            field: 'location',
+                            name: 'Ubicación'
+                        }
+                    },
+
+                    // Callback para renderizar los resultados
+                    renderCallback: (filteredServices) => {
+                        servicesListRender.servicesRender(filteredServices);
+                    }
+                }
+                const filterSystem = new FilterSystem(filterSystemConfig);
+                filterSystem.init();
+            });
+        </script>
+
+    </head>
+    <body>
+        <div id="app-container class="relative min-h-screen">
+            <!-- Sidebar de Aplicaciones (Visible en Desktop) -->
+            <aside id="app-sidebar" class="d-none d-md-flex flex-column  text-white p-2 vh-100 position-fixed bg-gradient">
+                <div class="d-flex flex-column align-items-center w-100">
+                    <!-- Botón para expandir/contraer -->
+                    <button id="app-sidebar-toggle-btn" class="btn btn-outline-light border-0 mb-0">
+                        <i class="bi bi-grid-3x3-gap fs-3" data-bs-toggle="tooltip" data-bs-placement="right" title="Aplicaciones"></i>
+                    </button>
+                    <div class="app-link-text">
+                        <p class="fs-6 fw-semibold mb-0">Mis Aplicaciones</p>
+                        <small class="text-white-50">uPlanner One</small>
+                    </div>
+                    <hr class="w-100 bg-secondary">
+                    <!-- Lista de Apps -->
+                    <nav id="app-list" class="nav flex-column w-100 gap-2 align-items-center"></nav>
+                </div>
+            </aside>
+            <!-- Encabezado Principal -->
+            <header id="main-header" class="navbar navbar-expand-md navbar-light d-flex flex-grow-1 align-items-center bg-white border-bottom">
+                <div class="container d-flex flex-md-grow-1 justify-content-between flex-nowrap">
+                    <!-- App Hub para Mobile -->
+                    <button id="mobile-apphub-btn" title="App Hub" class="btn d-md-none">
+                        <i class="bi bi-grid-3x3-gap fs-4 text-secondary"></i>
+                    </button>
+                    <!-- Navegación secundaria de objetos para mobile -->
+                    <button id="mobile-secondary-nav-btn" title="Opciones disponibles" class="btn d-md-none">
+                        <i class="bi bi-list fs-4 text-secondary"></i>
+                    </button>
+                    <!-- Logo institucional -->
+                    <a class="navbar-brand align-items-center d-flex" href="#">
+                        <img src="https://uplanner.com/wp-content/uploads/2022/08/Logo-uPlanner-correos.png" alt="Logo Institución" style="height: 40px;">
+                    </a>
+                    <!-- Barra de búsqueda global desktop -->
+                    <div class="input-group input-group-sm d-none d-md-flex">
+                        <input id="global-search-input" type="search" placeholder="Ej: 'No puedo pagar la cuota', 'Me va mal en cálculo'" class="form-control">
+                        <button id="global-search-btn" class="btn btn-primary fw-bold fs-6 px-4 vertical-align-middle d-flex" style="z-index: 999;"type="button">
+                            <i class="bi bi-search mt-1"></i>
+                        </button>
+                    </div>
+
+                    <!-- Controles de Usuario -->
+                    <div class="dropdown d-flex p-1 align-items-right">
+                        <!-- Notificaciones -->
+                        <div class="d-flex p-1">
+                            <button id="notifications-btn"
+                            class="btn btn-light d-flex align-items-center position-relative"
+                            type="button" 
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false">
+                                <i class="bi bi-bell fs-4 text-secondary"></i>
+                                <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none">
+                                    <span class="visually-hidden">unread messages</span>
+                                </span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end p-3 shadow border border-light"
+                            aria-labelledby="notifications-btn"
+                            style="width: 300px;">
+                                <div class="d-flex flex-column">
+                                    <h5 class="text-secondary">Notificaciones</h5>
+                                    <hr class="dropdown-divider">
+                                    <div class="form-check form-switch d-flex justify-content-between align-items-center text-end align-self-end p-2 w-100">
+                                        <label class="form-check-label small mb-0" for="flexSwitchCheckDefault">Solo las no leídas</label>
+                                        <input class="form-check-input" type="checkbox" id="flexSwitchCheckDefault">
+                                    </div>
+                                </div>
+                                <ul class="nav mb-2 w-100 notifications-scrollable-ul" role="tablist" id="notifications-list">
+                                <!-- Lista de notificaciones -->
+                                </ul>
+                                <button class="btn btn-light btn-sm d-flex align-items-center gap-2 w-100 d-flex justify-content-center">
+                                    <i class="bi bi-clock-history fs-5 text-secondary"></i>
+                                    <p class="mb-0">Ver todas las notificaciones</p>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Renderizar botón de usuario -->
+                        <div id='user-button-container' class="dropdown d-flex p-1"></div>
+                    </div>
+                </div>
+            </header>
+            <!-- Navegación secundaria de objetos con desplegables en Desktop -->
+            <div id="secondary-nav" class="d-none d-md-block bg-white border-bottom py-2 text-center w-100">
+                <div class="container d-flex justify-content-center">
+                    <div class="d-flex gap-4" role="group" aria-label="Navegación principal" id="object-nav-container">            
+                    <!-- Lista de objetos -->
+                    </div>
+                </div>
+            </div>
+            <!-- Area de Contenido Principal -->
+            <main id="main-content" class="d-flex flex-grow-1 p-4 ms-0 ms-md-5">
+        
+                <!-- Contenido principal -->
+                <div class="container-xl py-4">
+                    <div class="text-center mb-5">
+                        <h1 class="display-4 fw-bold text-dark mb-2">¿En qué podemos apoyarte hoy?</h1>
+                        <p class="lead text-muted">Encuentra los servicios que hemos preparado para ti.</p>
+                    </div>
+                    
+                    <div class="bg-white p-4 rounded-4 shadow mb-5">
+                        <div id="filter-bar" class="d-flex flex-wrap align-items-center gap-3 mb-3 d-none d-md-flex">
+                        <!-- Botones de filtros se agregan dinámicamente -->
+                        </div>
+                        <div class="input-group input-group-lg">
+                            <input id="search-input" type="search" placeholder="Ej: 'No puedo pagar la cuota', 'Me va mal en cálculo'" class="form-control">
+                            <button id="search-btn" class="btn btn-primary fw-bold fs-6 px-4 vertical-align-middle d-flex" style="z-index: 999;"type="button">
+                                <i class="bi bi-search d-md-none mt-1"></i><p class='d-none d-md-block m-0'>Encontrar</p>
+                            </button>
+                        </div>
+                        <button class="btn btn-outline-secondary filter-btn d-md-none w-100 mt-1" type="button" data-bs-toggle="filterSidebar" data-bs-target="#filterSidebar" aria-controls="filterSidebar" id="filterSidebarToggleBtn">
+                            <i class="bi bi-sliders"></i> Filtros
+                        </button>
+                    </div>
+        
+                    <!-- Grid de Tarjetas de Servicio -->
+                    <div id="services-grid" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                        <!-- Tarjetas serán re-pobladas aquí por JS -->
+                    </div>
+                    <div id="no-results" class="d-none text-center py-5"><h3 class="fw-bold text-body-secondary">No se encontraron servicios</h3><p class="text-muted">Intenta ajustar tu búsqueda o filtros.</p></div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Modales -->
+        <!-- Modal de Aplicaciones en Mobile -->
+        <div id="appHubModal" class="modal fade" tabindex="-1" aria-labelledby="appHubModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                         <h5 class="modal-title" id="appHubModalLabel">Aplicaciones</h5>
+                         <button id="closeAppHubModalBtn" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted mb-3">uPlanner One</p>
+                        <div id="app-hub-grid" class="row row-cols-2 g-3">
+                            <!-- Las aplicaciones se cargarán dinámicamente aquí -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Roles -->
+        <div class="modal fade" id="rolesModal" tabindex="-1" aria-labelledby="rolesModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h1 class="modal-title fs-5" id="rolesModalLabel">Mis roles en la app</h1>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="list-group">
+                        <button type="button" class="list-group-item list-group-item-action d-flex align-items-center" data-bs-dismiss="modal">
+                            <i class="bi bi-person-gear me-3"></i>Coordinador de apoyo estudiantil
+                        </button>
+                        <button type="button" class="list-group-item list-group-item-action d-flex align-items-center" data-bs-dismiss="modal">
+                            <i class="bi bi-person-heart me-3"></i>Profesional de apoyo
+                        </button>
+                        <button type="button" class="list-group-item list-group-item-action d-flex align-items-center active" aria-current="true" data-bs-dismiss="modal">
+                            <i class="bi bi-person me-3"></i>Estudiante
+                        </button>
+                        <button type="button" class="list-group-item list-group-item-action d-flex align-items-center" data-bs-dismiss="modal">
+                            <i class="bi bi-building-gear me-3"></i>Administrador institucional
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Filtros -->
+        <div id="filterModal" class="modal fade" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4">
+                <div class="modal-header border-bottom border-secondary border-1">
+                    <h5 id="filterModalTitle" class="modal-title fw-bold"></h5>
+                    <button id="closeFilterModalBtn" class="btn-close" aria-label="Close" data-bs-dismiss="modal"></button>
+                </div>
+                <div id="filterModalBody" class="modal-body p-10 gap-5 space-y-3"></div>
+                <div class="modal-footer border-0">
+                    <button id="applyFiltersBtn" class="btn btn-primary fw-bold w-100" data-bs-dismiss="modal">Aplicar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar para filtros en Mobile -->
+        <aside id="filterSidebar"
+        class="position-fixed start-0 bg-white shadow-lg overflow-hidden p-3"
+        tabindex="-1" aria-labelledby="filterSidebarLabel"
+        style="z-index: 1045;width: 350px; transform: translateX(-100%); transition: transform 0.3s ease-in-out; top: 140px; bottom: 0;">
+            <div class="d-flex flex-column">
+                <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+                    <h5 class="modal-title fw-bold">Filtros de búsqueda</h5>
+                    <button id="closeFilterSidebarBtn" class="btn-close" aria-label="Close"></button>
+                </div>
+                <div id="filter-sidebar-body" class="modal-body p-10 gap-5 space-y-3 overflow-auto"></div>
+                <div class="d-flex flex-grow-1"></div>
+                <div class="border-0 p-3 end-0">
+                    <button id="applyFiltersSidebarBtn" class="btn btn-primary fw-bold w-100">Aplicar filtros</button>
+                    <button id="clearFiltersSidebarBtn" class="btn btn-outline-secondary fw-bold w-100 mt-2">Limpiar filtros</button>
+                </div>
+            </div>
+        </aside>
+    
+        <!-- Modal para detalle de servicios -->
+        <div id="serviceDetailModal" class="modal fade" tabindex="-1" aria-labelledby="serviceDetailModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content rounded-4">
+                    <div class="modal-header border-bottom border-secondary border-1">
+                        <h5 id="serviceDetailModalLabel" class="modal-title fw-bold">Detalle del servicio</h5>
+                        <button id="closeServiceDetailModalBtn" class="btn-close" type="button"aria-label="Close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div id="serviceDetailModalBody" class="modal-body p-4">
+                    </div>
+                    <div class="modal-footer flex-column-reverse flex-sm-row align-items-center border-1 border-secondary border-top bg-gradient" style="background-color: #e9ecef;">
+                        <div class="text-center text-sm-start me-sm-auto">
+                            <small class="text-muted">¿Dudas? <a href="#">Contacta a tu asistente</a></small>
+                        </div>
+                        <button type="button" class="btn btn-primary fw-bold me-2"><i class="bi bi-check2-circle me-2"></i>Inscribirme Ahora</button>
+                        <!-- Aca añadiremos un botón para añadir el evento a la agenda de UP1 del estudiante, una vez este, se haya inscrito en el servicio-->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    </body>
+</html>
